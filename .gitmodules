@@ -1,0 +1,3 @@
+[submodule "bert-japanese"]
+	path = bert-japanese
+	url = https://github.com/yoheikikuta/bert-japanese.git
