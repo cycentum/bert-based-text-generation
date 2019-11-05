@@ -1,2 +1,2 @@
-# bert-based-text-generationn
+# bert-based-text-generation
 Text generation by iterative word replacement.
