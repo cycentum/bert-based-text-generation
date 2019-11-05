@@ -436,7 +436,7 @@ def saveGenerated(generatedTexts, file):
     	
 def readSentencePunctuation():
   sentencePunctuation=[]
-  with open(Path(__file__).parent/"SentencePunctuation.txt", "r", encoding="utf8") as f:
+  with open(Path(__file__).parent/"SentencePunctuation-ja.txt", "r", encoding="utf8") as f:
   	for line in f:
   		line=line.strip()
   		if line.startswith("#"): continue
