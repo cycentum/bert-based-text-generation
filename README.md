@@ -18,7 +18,7 @@ Input: the man went to the store .
 Masked input: the man went to the [MASK] .
 Output: the man went to the office .
 ```
-
+\
 And if you apply the step iteratively, starting from a “seed” sentence, until all words are replaced:
 ```
 Seed: the man went to the store .
@@ -40,4 +40,5 @@ Same as bert-japanese.
 
 ## License
 MIT.\
+
 Submodules bert-japanese and bert are released under the Apache 2.0 license.
