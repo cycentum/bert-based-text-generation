@@ -90,7 +90,7 @@ def run(modelType, inputText, iterSize, fileInitCheckpoint, fileVocab, initRandS
 if __name__ == "__main__":
 	DIR_BERT_JA_MODEL=Path("../bert-japanese/model")
 	DIR_BERT_MODEL=Path("../bert_model/cased_L-24_H-1024_A-16")
-	DIR_DATA=Path("./data")
+	DIR_DATA=Path("../data")
 	
 # 	runJa(DIR_BERT_JA_MODEL, DIR_DATA)
 	runEn(DIR_BERT_MODEL, DIR_DATA)
