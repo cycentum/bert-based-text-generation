@@ -1,6 +1,6 @@
 ###
 # Copied and modified from bert-japanese/src/extract_features.py
-# Replaces one token in a sentence with [MASK] and embeds the predicted word to the original sentence
+# Replaces randomly selected tokens in a sentence with [MASK] and embeds the predicted word to the original sentence
 ###
 
 # coding=utf-8
