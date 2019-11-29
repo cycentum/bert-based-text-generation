@@ -41,11 +41,13 @@ def runEn(DIR_BERT_MODEL, DIR_DATA):
 	
 	fileRandState=DIR_DATA/"RandE.pkl"
 	
-	outputText=run(modelType, inputText, iterSize, fileInitCheckpoint, fileVocab, fileRandState, bert_config_file=fileBertConfig)
+	outputText=run(modelType, inputText, iterSize, fileInitCheckpoint, fileVocab, fileRandState=fileRandState, bert_config_file=fileBertConfig)
 	for text in outputText: print(text)
 
 
 def run(modelType, inputText, iterSize, fileInitCheckpoint, fileVocab, initRandState=None, fileRandState=None, **kwargs):
+	tmpFiles=[]
+	
 	argv=[]
 	argv.extend(("--model_type", modelType))
 	argv.extend(("--init_checkpoint", str(fileInitCheckpoint)))
@@ -55,6 +57,7 @@ def run(modelType, inputText, iterSize, fileInitCheckpoint, fileVocab, initRandS
 		fileTmpInitRandState=Path(r"./TmpInitRandState.pkl")
 		with open(fileTmpInitRandState, "wb") as f: pickle.dump(initRandState, f)
 		argv.extend(("--init_rand_state_file", str(fileTmpInitRandState)))
+		tmpFiles.append(fileTmpInitRandState)
 	if not fileRandState is None:
 		argv.extend(("--rand_state_file", str(fileRandState)))
 	
@@ -64,11 +67,13 @@ def run(modelType, inputText, iterSize, fileInitCheckpoint, fileVocab, initRandS
 		argv.extend(("--"+key, str(arg)))
 	
 	fileTmpInput=Path(r"./TmpInput.txt")
+	tmpFiles.append(fileTmpInput)
 	argv.extend(("--input_file", str(fileTmpInput)))
 	with open(fileTmpInput, "w", encoding="utf8") as f:
 		for text in inputText: print(text, file=f)
 	
 	fileTmpOutput=Path(r"./TmpOutput.txt")
+	tmpFiles.append(fileTmpOutput)
 	argv.extend(("--output_file", str(fileTmpOutput)))
 	
 	subprocess.run([sys.executable, "./word_replacement.py", *argv])
@@ -78,9 +83,7 @@ def run(modelType, inputText, iterSize, fileInitCheckpoint, fileVocab, initRandS
 		for line in f:
 			outputText.append(line.rstrip())
 			
-	fileTmpInput.unlink()
-	fileTmpOutput.unlink()
-	fileTmpInitRandState.unlink()
+	for f in tmpFiles: f.unlink()
 	
 	return outputText
 
@@ -88,6 +91,6 @@ if __name__ == "__main__":
 	DIR_BERT_JA_MODEL=Path("../bert-japanese/model")
 	DIR_BERT_MODEL=Path("../bert_model/cased_L-24_H-1024_A-16")
 	DIR_DATA=Path("./data")
-
-	runJa(DIR_BERT_JA_MODEL, DIR_DATA)
-# 	runEn(DIR_BERT_MODEL, DIR_DATA)
+	
+# 	runJa(DIR_BERT_JA_MODEL, DIR_DATA)
+	runEn(DIR_BERT_MODEL, DIR_DATA)
