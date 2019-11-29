@@ -16,11 +16,11 @@ def runJa(DIR_BERT_JA_MODEL, DIR_DATA):
 		for line in f:
 			inputText.append(line.rstrip())
 			
-	iterSize=10
+	iterSize=4
 	
 	fileRandState=DIR_DATA/"RandJ.pkl"
 	
-	outputText=run(modelType, inputText, iterSize, fileInitCheckpoint, fileVocab, fileRandState, model_file=fileModel, mask_prob=0.2)
+	outputText=run(modelType, inputText, iterSize, fileInitCheckpoint, fileVocab, fileRandState=fileRandState, model_file=fileModel, mask_prob=0.2)
 	for text in outputText: print(text)
 
 
