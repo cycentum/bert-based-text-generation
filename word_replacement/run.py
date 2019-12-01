@@ -2,50 +2,49 @@ import sys
 from pathlib import Path
 import subprocess
 import pickle
-
-def runJa(DIR_BERT_JA_MODEL, DIR_DATA):
-	modelType="ja-sp"
-	
-	fileInitCheckpoint = DIR_BERT_JA_MODEL/"model.ckpt-1400000"
-	fileVocab=DIR_BERT_JA_MODEL/"wiki-ja.vocab"
-	fileModel=DIR_BERT_JA_MODEL/"wiki-ja.model"
-	
-	fileInput=DIR_DATA/"InputJ.txt"
-	inputText=[]
-	with open(fileInput, "r", encoding="utf8") as f:
-		for line in f:
-			inputText.append(line.rstrip())
-			
-	iterSize=4
-	
-	fileRandState=DIR_DATA/"RandJ.pkl"
-	
-	outputText=run(modelType, inputText, iterSize, fileInitCheckpoint, fileVocab, fileRandState=fileRandState, model_file=fileModel, mask_prob=0.2)
-	for text in outputText: print(text)
+import fasttext
+import numpy as np
 
 
-def runEn(DIR_BERT_MODEL, DIR_DATA):
-	modelType="orig"
+def run(inputText, iterSize, modelType="auto", initRandState=None, fileRandState=None, fileFastText=None, **kwargs):
+	if modelType=="auto":
+		model = fasttext.load_model(str(fileFastText))
+		numPred=8
+		langCandidate=("__label__en", "__label__ja")
+		while True:
+			langConfidence=model.predict("".join(inputText), k=numPred)
+			langConfidence=dict(zip(*langConfidence))
+			contains=False
+			for lang in langCandidate:
+				if lang in langConfidence:
+					contains=True
+					break
+			if contains: break
+			numPred*=2
+		for lang in langCandidate:
+			if lang not in langConfidence: langConfidence[lang]=0
+		conf=np.array([langConfidence[lang] for lang in langCandidate])
+		index=conf.argmax()
+		lang=langCandidate[index]
+		if lang=="__label__en":
+			modelType="orig"
+		elif lang=="__label__ja":
+			modelType="ja-sp"
+		print("lang =",lang,", model = ",modelType)
 	
-	fileInitCheckpoint = DIR_BERT_MODEL/"bert_model.ckpt"
-	fileVocab=DIR_BERT_MODEL/"vocab.txt"
-	fileBertConfig=DIR_BERT_MODEL/"bert_config.json"
+	if modelType=="ja-sp":
+		DIR_BERT_JA_MODEL=Path("../bert-japanese/model")
+		fileInitCheckpoint = DIR_BERT_JA_MODEL/"model.ckpt-1400000"
+		fileVocab=DIR_BERT_JA_MODEL/"wiki-ja.vocab"
+		fileModel=DIR_BERT_JA_MODEL/"wiki-ja.model"
+		kwargs["model_file"]=fileModel
+	elif modelType=="orig":
+		DIR_BERT_MODEL=Path("../bert_model/cased_L-24_H-1024_A-16")
+		fileInitCheckpoint = DIR_BERT_MODEL/"bert_model.ckpt"
+		fileVocab=DIR_BERT_MODEL/"vocab.txt"
+		fileBertConfig=DIR_BERT_MODEL/"bert_config.json"
+		kwargs["bert_config_file"]=fileBertConfig
 	
-	fileInput=DIR_DATA/"InputE.txt"
-	inputText=[]
-	with open(fileInput, "r", encoding="utf8") as f:
-		for line in f:
-			inputText.append(line.rstrip())
-	
-	iterSize=4
-	
-	fileRandState=DIR_DATA/"RandE.pkl"
-	
-	outputText=run(modelType, inputText, iterSize, fileInitCheckpoint, fileVocab, fileRandState=fileRandState, bert_config_file=fileBertConfig)
-	for text in outputText: print(text)
-
-
-def run(modelType, inputText, iterSize, fileInitCheckpoint, fileVocab, initRandState=None, fileRandState=None, **kwargs):
 	tmpFiles=[]
 	
 	argv=[]
@@ -88,9 +87,21 @@ def run(modelType, inputText, iterSize, fileInitCheckpoint, fileVocab, initRandS
 	return outputText
 
 if __name__ == "__main__":
-	DIR_BERT_JA_MODEL=Path("../bert-japanese/model")
-	DIR_BERT_MODEL=Path("../bert_model/cased_L-24_H-1024_A-16")
 	DIR_DATA=Path("../data")
+# 	fileInput=DIR_DATA/"InputJ.txt"
+	fileInput=DIR_DATA/"InputE.txt"
+	inputText=[]
+	with open(fileInput, "r", encoding="utf8") as f:
+		for line in f:
+			inputText.append(line.rstrip())
 	
-# 	runJa(DIR_BERT_JA_MODEL, DIR_DATA)
-	runEn(DIR_BERT_MODEL, DIR_DATA)
+	fileRandState=DIR_DATA/'RandState.pkl'
+	iterSize=4
+	mask_prob=0.2
+	
+	fileFastText=DIR_DATA/"lid.176.bin"
+
+	generatedText=run(inputText, iterSize, mask_prob=mask_prob, fileRandState=fileRandState, fileFastText=fileFastText)
+	
+	for text in generatedText:
+		print(text)

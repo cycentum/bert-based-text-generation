@@ -101,7 +101,7 @@ flags.DEFINE_string("output_epoch_dir", None, "")
 flags.DEFINE_string("rand_state_file", None, "Save random state for reproducibility")
 flags.DEFINE_string("init_rand_state_file", None, "Random state is initialized to this values")
 flags.DEFINE_integer("save_output_iters", 0, "How often to save the output. 0 (default) for not saving.")
-flags.DEFINE_string("model_type", None, "Model type. Only for my script.")
+flags.DEFINE_string("model_type", None, "Model type. orig or ja-sp.")
 
 
 class InputExample(object):
@@ -472,6 +472,7 @@ def singleIter(examples, tokenizer, estimator, inv_vocab, modelSpecific):
     
   for ei,example in enumerate(examples):
     tokens = tokenizer.tokenize(example.text_a)
+    tokens=modelSpecific.shapeTokens(tokens)
     example.tokens=list(tokens)
     example.tokensMask=list(tokens)
     modelSpecific.makeTokens0(example)
@@ -598,6 +599,7 @@ class ModelSpecificConfig:
     if FLAGS.model_type=="ja-sp":
       self._init_ja_sp()
       self.loadBertConfig=self._loadBertConfig_ja_sp
+      self.shapeTokens=self._shapeTokens_ja_sp
       self.makeTokens0=self._makeTokens0_ja_sp
       self.checkPunc=self._checkPunc_ja_sp
       self.replaceWord=self._replaceWord_ja_sp
@@ -605,6 +607,7 @@ class ModelSpecificConfig:
     elif FLAGS.model_type=="orig":
       self._init_orig()
       self.loadBertConfig=self._loadBertConfig_orig
+      self.shapeTokens=self._shapeTokens_orig
       self.checkPunc=self._checkPunc_orig
       self.makeTokens0=self._makeTokens0_orig
       self.replaceWord=self._replaceWord_orig
@@ -648,6 +651,16 @@ class ModelSpecificConfig:
   def _loadBertConfig_orig(self):
     return modeling.BertConfig.from_json_file(FLAGS.bert_config_file)
    
+  def _shapeTokens_ja_sp(self, tokens):
+    return tokens
+  
+  def _shapeTokens_orig(self, tokens):
+    newTokens=[]
+    for token in tokens:
+      if token==self.unk_token and len(newTokens)>0 and newTokens[-1]==self.unk_token: continue
+      newTokens.append(token)
+    return newTokens
+   
   def _checkPunc_ja_sp(self, text):
     for sp in self.sentencePunctuation:
       if text.endswith(sp):
@@ -682,8 +695,14 @@ class ModelSpecificConfig:
     index=0
     for ti,token in enumerate(example.tokens):
       if token.startswith("##"): token=token[2:]
+      if token==self.unk_token:
+        continue
       nextIndex=example.text_a[index:].find(token)
       assert nextIndex>=0
+      if ti>0 and example.tokens[ti-1]==self.unk_token:
+        example.tokenIndexToken0Index[ti-1]=len(example.tokens0)
+        if nextIndex==0:
+          example.tokens0.append("")
       if nextIndex>0:
         example.tokens0.append(example.text_a[index:index+nextIndex])
         index+=nextIndex
@@ -720,68 +739,6 @@ def saveGenerated(generatedTexts, file):
       print(text, file=f)
 
 
-def runJa():
-  tf.logging.set_verbosity(tf.logging.FATAL)
-  
-  sys.argv.extend(("--model_type", "ja-sp"))
-  
-  BERT_JA_DIR=PARENT_DIR/"bert-japanese"
-  # DIR_BERT_JA_MODEL=BERT_JA_DIR/"model"
-  DIR_BERT_JA_MODEL=Path(r"D:\cycentum\BertBasedTextGeneration\bert-japanese\model")
-  PRETRAINED_MODEL_PATH = DIR_BERT_JA_MODEL/"model.ckpt-1400000"
-  sys.argv.extend(("--init_checkpoint", str(PRETRAINED_MODEL_PATH)))
-
-  VOCAB_FILE=DIR_BERT_JA_MODEL/"wiki-ja.vocab"
-  sys.argv.extend(("--vocab_file", str(VOCAB_FILE)))
-
-  SP_MODEL_FILE=DIR_BERT_JA_MODEL/"wiki-ja.model"
-  sys.argv.extend(("--model_file", str(SP_MODEL_FILE)))
-  ###
-  sys.argv.extend(("--input_file", r"D:\cycentum\BertBasedTextGeneration\tmp\InputJ.txt"))
-  sys.argv.extend(("--output_file", r"D:\cycentum\BertBasedTextGeneration\tmp\OutputJ.txt"))
-  sys.argv.extend(("--random_seed_file", r"D:\cycentum\BertBasedTextGeneration\tmp\SeedJ.txt"))
-  sys.argv.extend(("--iter_size", r"1"))
-  ###
-  
-  flags.mark_flag_as_required("input_file")
-  flags.mark_flag_as_required("vocab_file")
-#   flags.mark_flag_as_required("bert_config_file")
-  flags.mark_flag_as_required("init_checkpoint")
-  flags.mark_flag_as_required("output_file")
-  
-  tf.app.run()
-  
-  
-def runEn():
-  tf.logging.set_verbosity(tf.logging.FATAL)
-  
-  sys.argv.extend(("--model_type", "orig"))
-  
-  DIR_BERT_MODEL=Path(r"D:\cycentum\BertBasedTextGeneration\bert_model\cased_L-24_H-1024_A-16")
-  PRETRAINED_MODEL_PATH = DIR_BERT_MODEL/"bert_model.ckpt"
-  sys.argv.extend(("--init_checkpoint", str(PRETRAINED_MODEL_PATH)))
-
-  VOCAB_FILE=DIR_BERT_MODEL/"vocab.txt"
-  sys.argv.extend(("--vocab_file", str(VOCAB_FILE)))
-
-  sys.argv.extend(("--bert_config_file", str(DIR_BERT_MODEL/"bert_config.json")))
-
-  ###
-  sys.argv.extend(("--input_file", r"D:\cycentum\BertBasedTextGeneration\tmp\InputE.txt"))
-  sys.argv.extend(("--output_file", r"D:\cycentum\BertBasedTextGeneration\tmp\OutputE.txt"))
-  sys.argv.extend(("--random_seed_file", r"D:\cycentum\BertBasedTextGeneration\tmp\SeedE.txt"))
-  sys.argv.extend(("--iter_size", r"1"))
-  ###
-
-  flags.mark_flag_as_required("input_file")
-  flags.mark_flag_as_required("vocab_file")
-  flags.mark_flag_as_required("bert_config_file")
-  flags.mark_flag_as_required("init_checkpoint")
-  flags.mark_flag_as_required("output_file")
-  tf.app.run()
-
-
-
 if __name__ == "__main__":
   tf.logging.set_verbosity(tf.logging.FATAL)
   
@@ -790,5 +747,6 @@ if __name__ == "__main__":
 #	 flags.mark_flag_as_required("bert_config_file")
   flags.mark_flag_as_required("init_checkpoint")
   flags.mark_flag_as_required("output_file")
+  flags.mark_flag_as_required("model_type")
 
   tf.app.run(main=main)
