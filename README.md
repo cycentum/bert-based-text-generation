@@ -39,7 +39,8 @@ Now you’ve got a new sentence!
 Generative models with iterative update has been proposed for a long time: eg, denoising auto encoders (https://arxiv.org/abs/1305.6663) and generative stochastic networks (https://arxiv.org/abs/1306.1091). I have not fully surveyed literatures but I suppose there should be many such studies in text generation, too.
 
 ## Dependencies
-Same as bert-japanese.
+- Language identification depends on [fastText](https://fasttext.cc/).
+- Other dependencies are the same as bert-japanese.
 
 ## License
 MIT.
