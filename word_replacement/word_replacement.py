@@ -460,7 +460,7 @@ def main(_):
     singleIter(examples, tokenizer, estimator, inv_vocab, modelSpecific)
     generatedTexts=[example.text_a for example in examples]
     if FLAGS.save_output_iters>0 and it%FLAGS.save_output_iters==0:
-      saveGenerated(generatedTexts, FLAGS.output_dir+"/Iter"+str(it)+".txt")
+      saveGenerated(generatedTexts, FLAGS.output_epoch_dir+"/Iter"+str(it)+".txt")
     examples=examples
     
   saveGenerated(generatedTexts, FLAGS.output_file)
