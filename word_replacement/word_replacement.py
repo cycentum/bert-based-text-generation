@@ -456,11 +456,15 @@ def main(_):
   inv_vocab = {v: k for k, v in vocab.items()}
   
   for it in range(FLAGS.iter_size):
-    print("Iteration", it)
+    print("Iteration", it, flush=True)
     singleIter(examples, tokenizer, estimator, inv_vocab, modelSpecific)
     generatedTexts=[example.text_a for example in examples]
     if FLAGS.save_output_iters>0 and it%FLAGS.save_output_iters==0:
       saveGenerated(generatedTexts, FLAGS.output_epoch_dir+"/Iter"+str(it)+".txt")
+    print("[Generated text begin]", flush=True)
+    for text in generatedTexts:
+      print("Generated:", text, flush=True)
+    print("[Generated text end]", flush=True)
     examples=examples
     
   saveGenerated(generatedTexts, FLAGS.output_file)
